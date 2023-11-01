@@ -1,0 +1,27 @@
+name: "Annex A - Coding Brief"
+description: Minor modifications or features for the plugin
+title: "[Brief]"
+labels: []
+body:
+- type: textarea
+  id: summary
+  attributes:
+    label: Summary
+    description: "Summary of the required work – can be expressed as a user story."
+  validations:
+    required: true
+
+- type: textarea
+  id: requirements
+  attributes:
+    label: Requirement / Changes
+    description: "Detailed requirements of the feature. Listed in bullet points as required."
+    value: "- "
+  validations:
+    required: true
+
+- type: textarea
+  id: comment
+  attributes:
+    label: Other comment
+    description: "Any other relevant information."

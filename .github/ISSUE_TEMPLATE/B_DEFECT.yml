@@ -1,0 +1,67 @@
+name: "Annex B - Defect"
+description: Plugin defect or otherwise incorrect functionality
+title: "[Defect]"
+labels: [ "bug" ]
+body:
+- type: dropdown
+  id: site
+  attributes:
+    label: Which site did you notice this issue on?
+    options:
+      - Darling Downs
+      - Gold Coast
+      - North West
+      - South West
+      - Sunshine Coast
+      - Torres and Cape
+      - Townsville
+      - West Moreton
+  validations:
+    required: true
+
+- type: dropdown
+  id: site-demo
+  attributes:
+    label: Was it on a demo site?
+    options:
+      - "No"
+      - "Yes"
+  validations:
+    required: true
+
+- type: textarea
+  id: reproduction
+  attributes:
+    label: Steps to reproduce
+    description: "What another person has to do to see the bug (sometimes there is only one step)."
+    value: "1. "
+  validations:
+    required: true
+
+- type: textarea
+  id: behaviour-current
+  attributes:
+    label: Current behaviour
+    placeholder: "Example: The course title does not display correctly."
+  validations:
+    required: true
+
+- type: textarea
+  id: behaviour-expected
+  attributes:
+    label: Expected Behaviour
+    placeholder: "Example: The course title should be visible at the top of the page."
+  validations:
+    required: true
+
+- type: textarea
+  id: additional
+  attributes:
+    label: Relevant logs and/or screenshots
+    description: "It's often helpful if you take a screenshot of the console/website using the “Snip” tool and include it in this report."
+
+- type: textarea
+  id: comment
+  attributes:
+    label: Other comment
+    description: "If you have other input, comments, ideas on how to fix 🤓, etc."

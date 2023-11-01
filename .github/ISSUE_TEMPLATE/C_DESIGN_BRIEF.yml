@@ -1,0 +1,51 @@
+name: "Annex C - Design Brief"
+description: New functionality or features for the plugin
+title: "[Feature]"
+labels: [ "enhancement" ]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Functional description and overview
+      description: "A paragraph that introduces the feature, explains what it will do, and describes how it will work."
+    validations:
+      required: true
+
+  - type: textarea
+    id: considerations
+    attributes:
+      label: Design considerations
+      value: |
+        Assumptions:
+        - 
+        
+        Dependencies:
+        - 
+        
+        Requirements:
+        - 
+        
+        Objectives:
+        -
+    validations:
+      required: true
+
+  - type: textarea
+    id: ui
+    attributes:
+      label: User Interface
+      description: "Description of end-user experience and user stories. Sketches or wireframes to be included here as required."
+    validations:
+      required: true
+
+  - type: textarea
+    id: database
+    attributes:
+      label: Database Interaction / Requirements
+      description: "Description of how the feature will interact with the moodle database."
+
+  - type: textarea
+    id: comment
+    attributes:
+      label: Other comment
+      description: "Any other relevant information."

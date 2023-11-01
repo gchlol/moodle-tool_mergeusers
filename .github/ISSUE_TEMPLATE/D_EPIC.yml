@@ -1,0 +1,22 @@
+name: "Annex D - Epic"
+description: Overarching entry to describe a large job and group related sub-tasks
+title: "[Epic]"
+labels: [ "epic" ]
+body:
+
+- type: textarea
+  id: summary
+  attributes:
+    label: Summary
+    description: "Summary of the overarching work and common task information"
+  validations:
+    required: true
+
+- type: textarea
+  id: tasks
+  attributes:
+    label: Tasks
+    description: "List of sub-tasks"
+    value: "- [ ] "
+  validations:
+    required: true
