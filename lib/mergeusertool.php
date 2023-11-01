@@ -252,26 +252,34 @@ class MergeUserTool
                 'fromid' => $fromid,
             );
             foreach ($this->userFieldsPerTable as $tableName => $userFields) {
-                $data['tableName'] = $tableName;
-                $data['userFields'] = $userFields;
-                if (isset($this->tablesWithCompoundIndex[$tableName])) {
-                    $data['compoundIndex'] = $this->tablesWithCompoundIndex[$tableName];
-                } else {
-                    unset($data['compoundIndex']);
-                }
+                try {
+                    $data['tableName'] = $tableName;
+                    $data['userFields'] = $userFields;
+                    if (isset($this->tablesWithCompoundIndex[$tableName])) {
+                        $data['compoundIndex'] = $this->tablesWithCompoundIndex[$tableName];
+                    } else {
+                        unset($data['compoundIndex']);
+                    }
 
-                $tableMerger = (isset($this->tableMergers[$tableName])) ?
+                    $tableMerger = (isset($this->tableMergers[$tableName])) ?
                         $this->tableMergers[$tableName] :
                         $this->tableMergers['default'];
 
-                // process the given $tableName.
-                $tableMerger->merge($data, $actionLog, $errorMessages);
+                    // process the given $tableName.
+                    $tableMerger->merge($data, $actionLog, $errorMessages);
+
+                } catch (Exception $e) {
+                    $errorMessages[] = nl2br("Exception thrown when merging table '$tableName': '" . $e->getMessage() . '".' .
+                            html_writer::empty_tag('br') . $DB->get_last_error() . html_writer::empty_tag('br') .
+                            'Trace:' . html_writer::empty_tag('br') .
+                            $e->getTraceAsString() . html_writer::empty_tag('br'));
+                }
             }
 
             $this->updateGrades($toid, $fromid);
             $this->reaggregateCompletions($toid);
         } catch (Exception $e) {
-            $errorMessages[] = nl2br("Exception thrown when merging: '" . $e->getMessage() . '".' .
+            $errorMessages[] = nl2br("Exception thrown when updating grades and completion: '" . $e->getMessage() . '".' .
                     html_writer::empty_tag('br') . $DB->get_last_error() . html_writer::empty_tag('br') .
                     'Trace:' . html_writer::empty_tag('br') .
                     $e->getTraceAsString() . html_writer::empty_tag('br'));
@@ -282,38 +290,23 @@ class MergeUserTool
         }
 
         if ($this->alwaysRollback) {
+            // Exit point.
             $transaction->rollback(new Exception('alwaysRollback option is set so rolling back transaction'));
         }
 
-        // concludes with true if no error
-        if (empty($errorMessages)) {
-            $transaction->allow_commit();
+        $transaction->allow_commit();
 
-            // add skipped tables as first action in log
-            $skippedTables = array();
-            if (!empty($this->tablesSkipped)) {
-                $skippedTables[] = get_string('tableskipped', 'tool_mergeusers', implode(", ", $this->tablesSkipped));
-            }
-
-            $finishTime = time();
-            $actionLog[] = get_string('finishtime', 'tool_mergeusers', userdate($finishTime));
-            $actionLog[] = get_string('timetaken', 'tool_mergeusers', $finishTime - $startTime);
-
-            return array(true, array_merge($skippedTables, $actionLog));
-        } else {
-            try {
-                //thrown controlled exception.
-                $transaction->rollback(new Exception(__METHOD__ . ':: Rolling back transcation.'));
-            } catch (Exception $e) { /* do nothing, just for correctness */
-            }
+        // add skipped tables as first action in log
+        $skippedTables = array();
+        if (!empty($this->tablesSkipped)) {
+            $skippedTables[] = get_string('tableskipped', 'tool_mergeusers', implode(", ", $this->tablesSkipped));
         }
 
         $finishTime = time();
-        $errorMessages[] = $startTimeString;
-        $errorMessages[] = get_string('timetaken', 'tool_mergeusers', $finishTime - $startTime);
+        $actionLog[] = get_string('finishtime', 'tool_mergeusers', userdate($finishTime));
+        $actionLog[] = get_string('timetaken', 'tool_mergeusers', $finishTime - $startTime);
 
-        // concludes with an array of error messages otherwise.
-        return array(false, $errorMessages);
+        return array(true, array_merge($errorMessages, $skippedTables, $actionLog));
     }
 
     // ****************** INTERNAL UTILITY METHODS ***********************************************
