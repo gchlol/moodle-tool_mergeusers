@@ -276,7 +276,7 @@ class MergeUserTool
                 }
             }
 
-            $this->updateGrades($toid, $fromid);
+            $this->updateGrades($toid, $fromid, $errorMessages);
             $this->reaggregateCompletions($toid);
         } catch (Exception $e) {
             $errorMessages[] = nl2br("Exception thrown when updating grades and completion: '" . $e->getMessage() . '".' .
@@ -439,8 +439,9 @@ class MergeUserTool
     /**
      * Update all of the target user's grades.
      * @param int $toid User id
+     * @param array $errorMessages list of error messages.
      */
-    private function updateGrades($toid, $fromid) {
+    private function updateGrades($toid, $fromid, &$errorMessages) {
         global $DB, $CFG;
         require_once($CFG->libdir.'/gradelib.php');
 
@@ -452,17 +453,24 @@ class MergeUserTool
         $iteminstances = $DB->get_records_sql($sql, array('toid' => $toid, 'fromid' => $fromid));
 
         foreach ($iteminstances as $iteminstance) {
-            if (!$activity = $DB->get_record($iteminstance->itemmodule, array('id' => $iteminstance->iteminstance))) {
-                throw new \Exception("Can not find $iteminstance->itemmodule activity with id $iteminstance->iteminstance");
-            }
-            if (!$cm = get_coursemodule_from_instance($iteminstance->itemmodule, $activity->id, $iteminstance->courseid)) {
-                throw new \Exception('Can not find course module');
-            }
+            try {
+                if (!$activity = $DB->get_record($iteminstance->itemmodule, [ 'id' => $iteminstance->iteminstance ])) {
+                    throw new \Exception("Can not find $iteminstance->itemmodule activity with id $iteminstance->iteminstance");
+                }
+                if (!$cm = get_coursemodule_from_instance($iteminstance->itemmodule, $activity->id, $iteminstance->courseid)) {
+                    throw new \Exception('Can not find course module');
+                }
 
-            $activity->modname    = $iteminstance->itemmodule;
-            $activity->cmidnumber = $cm->idnumber;
+                $activity->modname = $iteminstance->itemmodule;
+                $activity->cmidnumber = $cm->idnumber;
 
-            grade_update_mod_grades($activity, $toid);
+                grade_update_mod_grades($activity, $toid);
+            } catch (Exception $e) {
+                $errorMessages[] = nl2br("Exception thrown when updating grades: '" . $e->getMessage() . '".' .
+                    html_writer::empty_tag('br') . $DB->get_last_error() . html_writer::empty_tag('br') .
+                    'Trace:' . html_writer::empty_tag('br') .
+                    $e->getTraceAsString() . html_writer::empty_tag('br'));
+            }
         }
     }
 
