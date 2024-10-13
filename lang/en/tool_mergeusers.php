@@ -194,3 +194,12 @@ $string['starttime'] = 'Started merging at {$a}';
 $string['finishtime'] = 'Finished merging at {$a}';
 $string['timetaken'] = 'Merge took {$a} seconds';
 $string['privacy:metadata'] = 'The Merge User Accounts plugin does not store any personal data.';
+
+$string['mergeusers_completion_updated'] = 'Course completion for course {$a->courseid} updated from user {$a->fromid} to user {$a->toid}.';
+$string['mergeusers_completion_skipped'] = 'Course completion for course {$a->courseid} already exists for user {$a->toid}. Skipping merge.';
+$string['mergeusers_completion_removed'] = 'All course completions for user {$a->fromid} have been removed.';
+$string['mergeusers_recompletion_moved'] = 'Old course completion for user {$a->fromid} and course {$a->courseid} moved to local recompletion.';
+$string['mergeusers_recompletion_error'] = 'Error moving course completion for user {$a->fromid} and course {$a->courseid} to local recompletion: {$a->error}.';
+
+$string['coursecompletionaction'] = 'Course completion action';
+$string['coursecompletionaction_desc'] = 'Description of the course completion action.';

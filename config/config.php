@@ -158,6 +158,7 @@ return array(
     'tablemergers' => array(
         'default' => 'GenericTableMerger',
         'quiz_attempts' => 'QuizAttemptsMerger',
+        'course_completions' => 'CourseCompletionTableMerger',
         'assign_submission' => 'AssignSubmissionTableMerger',
     ),
 
