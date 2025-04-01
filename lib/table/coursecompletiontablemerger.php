@@ -1,5 +1,20 @@
 <?php
 
+// This file is part of Moodle - https://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
 /**
  * Course Completion Table Merger implementation.
  *
@@ -12,11 +27,22 @@ defined('MOODLE_INTERNAL') || die();
 class CourseCompletionTableMerger extends GenericTableMerger {
 
     /**
+     * @var string current defined action.
+     */
+    private mixed $action;
+
+    public function __construct()
+    {
+        $this->action = get_config('tool_mergeusers', 'coursecompletionaction');
+    }
+
+    /**
      * Merges course completions from the old user into the new user and moves old records into local recompletion.
      *
      * @param array $data array with the necessary data for merging records.
-     * @param array $actionLog list of actions performed.
-     * @param array $errorMessages list of error messages.
+     * @param string[] $actionLog list of actions performed.
+     * @param string[] $errorMessages list of error messages.
+     * @return void
      */
     public function merge($data, &$actionLog, &$errorMessages) {
         global $DB;
@@ -28,90 +54,104 @@ class CourseCompletionTableMerger extends GenericTableMerger {
         $oldCompletions = $DB->get_records('course_completions', ['userid' => $fromid]);
 
         foreach ($oldCompletions as $completion) {
-            // Check if the new user already has a completion record for the course.
+            $actionLog[] = get_string(
+                'mergeusers_processing_completion',
+                'tool_mergeusers',
+                (object) ['courseid' => $completion->course]
+            );
+
             $existingCompletion = $DB->get_record('course_completions', [
                 'userid' => $toid,
-                'course' => $completion->course
+                'course' => $completion->course,
             ]);
 
-            // Handle based on completion timestamp presence.
             if ($existingCompletion) {
+                $actionLog[] = "Transferring completion for course {$completion->course} to user {$toid}.";
+
                 $this->handle_existing_completion($completion, $existingCompletion, $fromid, $toid, $actionLog, $errorMessages);
+                continue;
             }
 
-            if (!$existingCompletion) {
-                // No existing completion for the toid user, transfer fromid's completion
-                $this->transfer_completion($completion, $fromid, $toid, $actionLog, $errorMessages);
-            }
+            $this->transfer_completion($completion, $fromid, $toid, $actionLog, $errorMessages);
         }
 
-        // Delete old user's course completion records.
         $DB->delete_records('course_completions', ['userid' => $fromid]);
 
-        $actionLog[] = get_string('mergeusers_completion_removed', 'tool_mergeusers', (object)[
-            'fromid' => $fromid
-        ]);
+        $actionLog[] = get_string(
+            'mergeusers_completion_removed',
+            'tool_mergeusers',
+            (object) ['fromid' => $fromid]
+        );
     }
 
     /**
      * Handles the logic for cases where both users have course completions.
      *
-     * @param object $completion Course completion record for the old user.
-     * @param object $existingCompletion Course completion record for the new user.
+     * @param stdClass $completion Course completion record for the old user.
+     * @param stdClass $existingCompletion Course completion record for the new user.
      * @param int $fromid Old user ID.
      * @param int $toid New user ID.
-     * @param array $actionLog List of actions performed.
-     * @param array $errorMessages List of error messages.
+     * @param string[] $actionLog List of actions performed.
+     * @param string[] $errorMessages List of error messages.
+     * @return void
      */
-    protected function handle_existing_completion($completion, $existingCompletion, $fromid, $toid, &$actionLog, &$errorMessages) {
+    protected function handle_existing_completion($completion, $existingCompletion, $fromid, $toid, &$actionLog, &$errorMessages): void {
         global $DB;
 
-        // Both have timestamps: keep the latest, move the older to recompletion.
-        if (!empty($completion->timecompleted) && !empty($existingCompletion->timecompleted)) {
-            if ($completion->timecompleted > $existingCompletion->timecompleted) {
-                // Keep fromid's (latest), move toid's to recompletion.
-                $this->move_to_recompletion($existingCompletion, $toid, $actionLog, $errorMessages);
-                $completion->userid = $toid;
-                $DB->update_record('course_completions', $completion);
-                $actionLog[] = get_string('mergeusers_completion_updated', 'tool_mergeusers', (object)[
-                    'courseid' => $completion->course,
-                    'fromid' => $fromid,
-                    'toid' => $toid
-                ]);
-            }
+        $actionLog[] = get_string(
+            'mergeusers_handling_conflict',
+            'tool_mergeusers',
+            (object) ['courseid' => $completion->course]
+        );
 
-            if ($completion->timecompleted <= $existingCompletion->timecompleted) {
-                // Keep toid's, move fromid's to recompletion.
-                $this->move_to_recompletion($completion, $fromid, $actionLog, $errorMessages);
-            }
-        }
-
-        // fromid has timestamp, toid has none: move fromid's to recompletion.
-        if (!empty($completion->timecompleted) && empty($existingCompletion->timecompleted)) {
-            $this->move_to_recompletion($completion, $fromid, $actionLog, $errorMessages);
-        }
-
-        // Neither have timestamps: move fromid's to recompletion.
         if (empty($completion->timecompleted) && empty($existingCompletion->timecompleted)) {
-            $this->move_to_recompletion($completion, $fromid, $actionLog, $errorMessages);
+            $actionLog[] = "Skipped merge for course {$completion->course} as both completions have no timestamp.";
+            return;
         }
 
-        // fromid has no timestamp, toid has: move fromid's to recompletion.
-        if (empty($completion->timecompleted) && !empty($existingCompletion->timecompleted)) {
-            $this->move_to_recompletion($completion, $fromid, $actionLog, $errorMessages);
+        if (!empty($completion->timecompleted) &&
+            (empty($existingCompletion->timecompleted) || $completion->timecompleted > $existingCompletion->timecompleted)) {
+
+            $actionLog[] = get_string(
+                'mergeusers_existing_to_recompletion',
+                'tool_mergeusers',
+                (object) ['courseid' => $completion->course]
+            );
+
+            $this->move_to_recompletion($existingCompletion, $toid, $actionLog, $errorMessages);
+
+            $updatecompletion = clone $completion;
+            $updatecompletion->userid = $toid;
+            $DB->update_record('course_completions', $updatecompletion);
+
+            $actionLog[] = get_string(
+                'mergeusers_old_to_recompletion',
+                'tool_mergeusers',
+                (object) ['courseid' => $completion->course]
+            );
+
+            return;
         }
+
+        $actionLog[] = get_string(
+            'mergeusers_old_to_recompletion',
+            'tool_mergeusers',
+            (object) ['courseid' => $completion->course]
+        );
+        $this->move_to_recompletion($completion, $fromid, $actionLog, $errorMessages);
     }
 
     /**
      * Transfers a completion record from old user to new user.
      *
-     * @param object $completion Course completion record for the old user.
+     * @param stdClass $completion Course completion record for the old user.
      * @param int $fromid Old user ID.
      * @param int $toid New user ID.
-     * @param array $actionLog List of actions performed.
-     * @param array $errorMessages List of error messages.
+     * @param string[] $actionLog List of actions performed.
+     * @param string[] $errorMessages List of error messages.
+     * @return void
      */
-    protected function transfer_completion($completion, $fromid, $toid, &$actionLog, &$errorMessages) {
+    protected function transfer_completion($completion, $fromid, $toid, &$actionLog, &$errorMessages): void {
         global $DB;
 
         // Transfer completion from old user to new user.
@@ -120,7 +160,7 @@ class CourseCompletionTableMerger extends GenericTableMerger {
         $actionLog[] = get_string('mergeusers_completion_updated', 'tool_mergeusers', (object)[
             'courseid' => $completion->course,
             'fromid' => $fromid,
-            'toid' => $toid
+            'toid' => $toid,
         ]);
 
         // Move fromid's record to recompletion if it has a timestamp.
@@ -132,33 +172,45 @@ class CourseCompletionTableMerger extends GenericTableMerger {
     /**
      * Moves the old course completion records to local recompletion.
      *
-     * @param object $completion Course completion object.
+     * @param stdClass $completion Course completion object.
      * @param int $userid User id whose records are moved.
-     * @param array $actionLog List of actions performed.
-     * @param array $errorMessages List of error messages.
+     * @param string[] $actionLog List of actions performed.
+     * @param string[] $errorMessages List of error messages.
+     * @return void
      */
-    protected function move_to_recompletion($completion, $userid, &$actionLog, &$errorMessages) {
+    protected function move_to_recompletion($completion, $userid, &$actionLog, &$errorMessages): void {
         global $DB;
 
-        // Create a record in the local recompletion table (e.g., local_recompletion) for historical purposes.
-        $recompletionData = new stdClass();
-        $recompletionData->userid = $userid;
-        $recompletionData->courseid = $completion->course;
-        $recompletionData->timecompleted = $completion->timecompleted;
-        $recompletionData->timemodified = time();
+        $actionLog[] = "Moving course completion (Course ID: {$completion->course}) to recompletion for user {$userid}.";
+
+        $recompletiondata = new stdClass();
+        $recompletiondata->userid = $userid;
+        $recompletiondata->courseid = $completion->course;
+        $recompletiondata->timecompleted = $completion->timecompleted;
+        $recompletiondata->timemodified = time();
 
         try {
-            $DB->insert_record('local_recompletion_cc', $recompletionData);
-            $actionLog[] = get_string('mergeusers_recompletion_moved', 'tool_mergeusers', (object)[
-                'courseid' => $completion->course,
-                'userid' => $userid
-            ]);
+            $DB->insert_record('local_recompletion_cc', $recompletiondata);
+
+            $actionLog[] = get_string(
+                'mergeusers_recompletion_moved',
+                'tool_mergeusers',
+                (object) [
+                    'courseid' => $completion->course,
+                    'userid' => $userid,
+                ]
+            );
+
         } catch (Exception $e) {
-            $errorMessages[] = get_string('mergeusers_recompletion_error', 'tool_mergeusers', (object)[
-                'courseid' => $completion->course,
-                'userid' => $userid,
-                'error' => $e->getMessage()
-            ]);
+            $errorMessages[] = get_string(
+                'mergeusers_recompletion_error',
+                'tool_mergeusers',
+                (object) [
+                    'courseid' => $completion->course,
+                    'userid' => $userid,
+                    'error' => $e->getMessage(),
+                ]
+            );
         }
     }
 }

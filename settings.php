@@ -90,6 +90,11 @@ if ($hassiteconfig) {
         get_string('uniquekeynewidtomaintain_desc', 'tool_mergeusers'),
         1));
 
+    $settings->add(new admin_setting_configcheckbox('tool_mergeusers/coursecompletionaction',
+        get_string('coursecompletionaction', 'tool_mergeusers'),
+        get_string('coursecompletionaction_desc', 'tool_mergeusers'),
+        1));
+
     // Add settings
     $ADMIN->add('tools', $settings);
 }
