@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -25,12 +24,6 @@
 defined('MOODLE_INTERNAL') || die();
 
 class CourseCompletionTableMerger extends GenericTableMerger {
-
-    /**
-     * @var string current defined action.
-     */
-    private mixed $action;
-
     public function __construct()
     {
         $this->action = get_config('tool_mergeusers', 'coursecompletionaction');
@@ -44,18 +37,18 @@ class CourseCompletionTableMerger extends GenericTableMerger {
      * @param string[] $errorMessages list of error messages.
      * @return void
      */
-    public function merge($data, &$actionLog, &$errorMessages) {
+    public function merge($data, &$actionLog, &$errorMessages): void {
         global $DB;
 
         $fromid = $data['fromid'];
         $toid = $data['toid'];
 
         // Fetch all course completions for the old user.
-        $oldCompletions = $DB->get_records('course_completions', ['userid' => $fromid]);
+        $oldcompletions = $DB->get_records('course_completions', ['userid' => $fromid]);
 
-        foreach ($oldCompletions as $completion) {
+        foreach ($oldcompletions as $completion) {
             $actionLog[] = get_string(
-                'mergeusers_processing_completion',
+                'processingcompletion',
                 'tool_mergeusers',
                 (object) ['courseid' => $completion->course]
             );
@@ -66,9 +59,17 @@ class CourseCompletionTableMerger extends GenericTableMerger {
             ]);
 
             if ($existingCompletion) {
-                $actionLog[] = "Transferring completion for course {$completion->course} to user {$toid}.";
+                $actionLog[] = get_string(
+                    'existingfound',
+                    'tool_mergeusers',
+                    (object) [
+                        'courseid' => $completion->course,
+                        'toid' => $toid,
+                    ]
+                );
 
                 $this->handle_existing_completion($completion, $existingCompletion, $fromid, $toid, $actionLog, $errorMessages);
+
                 continue;
             }
 
@@ -78,7 +79,7 @@ class CourseCompletionTableMerger extends GenericTableMerger {
         $DB->delete_records('course_completions', ['userid' => $fromid]);
 
         $actionLog[] = get_string(
-            'mergeusers_completion_removed',
+            'completionremoved',
             'tool_mergeusers',
             (object) ['fromid' => $fromid]
         );
@@ -99,21 +100,29 @@ class CourseCompletionTableMerger extends GenericTableMerger {
         global $DB;
 
         $actionLog[] = get_string(
-            'mergeusers_handling_conflict',
+            'handlingconflict',
             'tool_mergeusers',
             (object) ['courseid' => $completion->course]
         );
 
-        if (empty($completion->timecompleted) && empty($existingCompletion->timecompleted)) {
-            $actionLog[] = "Skipped merge for course {$completion->course} as both completions have no timestamp.";
+        if (empty($completion->timecompleted) &&
+            empty($existingCompletion->timecompleted)) {
+
+            $actionLog[] = get_string(
+                'bothempty',
+                'tool_mergeusers',
+                (object) ['courseid' => $completion->course]
+            );
+
             return;
         }
 
         if (!empty($completion->timecompleted) &&
-            (empty($existingCompletion->timecompleted) || $completion->timecompleted > $existingCompletion->timecompleted)) {
+            (empty($existingCompletion->timecompleted) ||
+                $completion->timecompleted > $existingCompletion->timecompleted)) {
 
             $actionLog[] = get_string(
-                'mergeusers_existing_to_recompletion',
+                'existingtorecompletion',
                 'tool_mergeusers',
                 (object) ['courseid' => $completion->course]
             );
@@ -125,7 +134,7 @@ class CourseCompletionTableMerger extends GenericTableMerger {
             $DB->update_record('course_completions', $updatecompletion);
 
             $actionLog[] = get_string(
-                'mergeusers_old_to_recompletion',
+                'oldtorecompletion',
                 'tool_mergeusers',
                 (object) ['courseid' => $completion->course]
             );
@@ -134,7 +143,7 @@ class CourseCompletionTableMerger extends GenericTableMerger {
         }
 
         $actionLog[] = get_string(
-            'mergeusers_old_to_recompletion',
+            'oldtorecompletion',
             'tool_mergeusers',
             (object) ['courseid' => $completion->course]
         );
@@ -157,11 +166,15 @@ class CourseCompletionTableMerger extends GenericTableMerger {
         // Transfer completion from old user to new user.
         $completion->userid = $toid;
         $DB->update_record('course_completions', $completion);
-        $actionLog[] = get_string('mergeusers_completion_updated', 'tool_mergeusers', (object)[
+        $actionLog[] = get_string(
+            'completionupdated',
+            'tool_mergeusers',
+            (object)[
             'courseid' => $completion->course,
             'fromid' => $fromid,
             'toid' => $toid,
-        ]);
+            ]
+        );
 
         // Move fromid's record to recompletion if it has a timestamp.
         if (!empty($completion->timecompleted)) {
@@ -181,7 +194,14 @@ class CourseCompletionTableMerger extends GenericTableMerger {
     protected function move_to_recompletion($completion, $userid, &$actionLog, &$errorMessages): void {
         global $DB;
 
-        $actionLog[] = "Moving course completion (Course ID: {$completion->course}) to recompletion for user {$userid}.";
+        $actionLog[] = get_string(
+            'movingtorecompletion',
+            'tool_mergeusers',
+            (object) [
+                'courseid' => $completion->course,
+                'userid' => $userid,
+            ]
+        );
 
         $recompletiondata = new stdClass();
         $recompletiondata->userid = $userid;
@@ -193,7 +213,7 @@ class CourseCompletionTableMerger extends GenericTableMerger {
             $DB->insert_record('local_recompletion_cc', $recompletiondata);
 
             $actionLog[] = get_string(
-                'mergeusers_recompletion_moved',
+                'recompletionmoved',
                 'tool_mergeusers',
                 (object) [
                     'courseid' => $completion->course,
@@ -203,7 +223,7 @@ class CourseCompletionTableMerger extends GenericTableMerger {
 
         } catch (Exception $e) {
             $errorMessages[] = get_string(
-                'mergeusers_recompletion_error',
+                'recompletionerror',
                 'tool_mergeusers',
                 (object) [
                     'courseid' => $completion->course,

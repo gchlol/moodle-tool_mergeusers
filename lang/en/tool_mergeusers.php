@@ -195,16 +195,17 @@ $string['finishtime'] = 'Finished merging at {$a}';
 $string['timetaken'] = 'Merge took {$a} seconds';
 $string['privacy:metadata'] = 'The Merge User Accounts plugin does not store any personal data.';
 
-$string['mergeusers_processing_completion'] = 'Processing completion for course ID {$a->courseid}.';
-$string['mergeusers_existing_found'] = 'Transferring completion for course {$a->courseid} to user {$a->toid}.';
-$string['mergeusers_handling_conflict'] = 'Handling existing completion conflict for course {$a->courseid}.';
-$string['mergeusers_both_empty'] = 'Skipped merge for course {$a->courseid} as both completions have no timestamp.';
-$string['mergeusers_existing_to_recompletion'] = 'Existing completion moved to recompletion and newer completion transferred for course {$a->courseid}.';
-$string['mergeusers_old_to_recompletion'] = 'Old user\'s completion moved to recompletion for course {$a->courseid}.';
-$string['mergeusers_completion_updated'] = 'Updated completion for course {$a->courseid} from user {$a->fromid} to user {$a->toid}.';
-$string['mergeusers_moving_to_recompletion'] = 'Moving course completion (Course ID: {$a->courseid}) to recompletion for user {$a->userid}.';
-$string['mergeusers_recompletion_moved'] = 'Moved course {$a->courseid} completion for user {$a->userid} to recompletion.';
-$string['mergeusers_recompletion_error'] = 'Error moving course {$a->courseid} completion for user {$a->userid} to recompletion: {$a->error}.';
+$string['processingcompletion'] = 'Processing completion for course ID {$a->courseid}.';
+$string['existingfound'] = 'Transferring completion for course {$a->courseid} to user {$a->toid}.';
+$string['handlingconflict'] = 'Handling existing completion conflict for course {$a->courseid}.';
+$string['bothempty'] = 'Skipped merge for course {$a->courseid} as both completions have no timestamp.';
+$string['existingtorecompletion'] = 'Existing completion moved to recompletion and newer completion transferred for course {$a->courseid}.';
+$string['oldtorecompletion'] = 'Old user\'s completion moved to recompletion for course {$a->courseid}.';
+$string['completionupdated'] = 'Updated completion for course {$a->courseid} from user {$a->fromid} to user {$a->toid}.';
+$string['completionremoved'] = 'Removed all course completions for user {$a->fromid}.';
+$string['movingtorecompletion'] = 'Moving course completion (Course ID: {$a->courseid}) to recompletion for user {$a->userid}.';
+$string['recompletionmoved'] = 'Moved course {$a->courseid} completion for user {$a->userid} to recompletion.';
+$string['recompletionerror'] = 'Error moving course {$a->courseid} completion for user {$a->userid} to recompletion: {$a->error}.';
 
 $string['coursecompletionaction'] = 'Course completion action';
 $string['coursecompletionaction_desc'] = 'Description of the course completion action.';
