@@ -206,6 +206,3 @@ $string['completionremoved'] = 'Removed all course completions for user {$a->fro
 $string['movingtorecompletion'] = 'Moving course completion (Course ID: {$a->courseid}) to recompletion for user {$a->userid}.';
 $string['recompletionmoved'] = 'Moved course {$a->courseid} completion for user {$a->userid} to recompletion.';
 $string['recompletionerror'] = 'Error moving course {$a->courseid} completion for user {$a->userid} to recompletion: {$a->error}.';
-
-$string['coursecompletionaction'] = 'Course completion action';
-$string['coursecompletionaction_desc'] = 'Description of the course completion action.';

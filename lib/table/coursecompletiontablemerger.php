@@ -24,11 +24,6 @@
 defined('MOODLE_INTERNAL') || die();
 
 class CourseCompletionTableMerger extends GenericTableMerger {
-    public function __construct()
-    {
-        $this->action = get_config('tool_mergeusers', 'coursecompletionaction');
-    }
-
     /**
      * Merges course completions from the old user into the new user and moves old records into local recompletion.
      *
@@ -105,8 +100,10 @@ class CourseCompletionTableMerger extends GenericTableMerger {
             (object) ['courseid' => $completion->course]
         );
 
-        if (empty($completion->timecompleted) &&
-            empty($existingCompletion->timecompleted)) {
+        if (
+            empty($completion->timecompleted) &&
+            empty($existingCompletion->timecompleted)
+        ) {
 
             $actionLog[] = get_string(
                 'bothempty',
@@ -117,9 +114,13 @@ class CourseCompletionTableMerger extends GenericTableMerger {
             return;
         }
 
-        if (!empty($completion->timecompleted) &&
-            (empty($existingCompletion->timecompleted) ||
-                $completion->timecompleted > $existingCompletion->timecompleted)) {
+        if (
+            !empty($completion->timecompleted) &&
+            (
+                empty($existingCompletion->timecompleted) ||
+                $completion->timecompleted > $existingCompletion->timecompleted
+            )
+        ) {
 
             $actionLog[] = get_string(
                 'existingtorecompletion',
