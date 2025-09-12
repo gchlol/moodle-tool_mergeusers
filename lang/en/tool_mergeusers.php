@@ -128,3 +128,15 @@ $string['userreviewtable_legend'] = '<b>Review users to merge</b>';
 $string['userselecttable_legend'] = '<b>Select users to merge</b>';
 $string['viewlog'] = 'Merge users logs';
 $string['wronglogid'] = 'The log you are asking for does not exist.';
+
+$string['processingcompletion'] = 'Processing completion for course ID {$a}.';
+$string['existingfound'] = 'Transferring completion for course {$a->courseid} to user {$a->toid}.';
+$string['handlingconflict'] = 'Handling existing completion conflict for course {$a}.';
+$string['bothempty'] = 'Skipped merge for course {$a} as both completions have no timestamp.';
+$string['existingtorecompletion'] = 'Existing completion moved to recompletion and newer completion transferred for course {$a}.';
+$string['oldtorecompletion'] = 'Old user\'s completion moved to recompletion for course {$a}.';
+$string['completionupdated'] = 'Updated completion for course {$a->courseid} from user {$a->fromid} to user {$a->toid}.';
+$string['completionremoved'] = 'Removed all course completions for user {$a}.';
+$string['movingtorecompletion'] = 'Moving course completion (Course ID: {$a->courseid}) to recompletion for user {$a->userid}.';
+$string['recompletionmoved'] = 'Moved course {$a->courseid} completion for user {$a->userid} to recompletion.';
+$string['recompletionerror'] = 'Error moving course {$a->courseid} completion for user {$a->userid} to recompletion: {$a->error}.';
