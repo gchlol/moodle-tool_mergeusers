@@ -278,6 +278,12 @@ class default_db_config {
                 'userfield' => ['userid'],
                 'otherfields' => ['forum'],
             ],
+            'facetoface_signups' => [
+                // For index 'userid-sessionid'.
+                // Type of index: unique; type of matching: by %user%-related column name.
+                'userfield' => ['userid'],
+                'otherfields' => ['sessionid'],
+            ],
             'h5pactivity_attempts' => [
                 // For index 'mdl_h5paatte_h5puseatt_uix'.
                 // Type of index: unique; type of matching: by %user%-related column name.
